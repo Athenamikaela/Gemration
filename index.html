@@ -74,8 +74,8 @@
         const countdownDuration = 20; // 20 seconds countdown
         const keyExpirationHours = 24; // Key expires after 24 hours
 
-        // Secret phrase (keep this secret and match it in Roblox)
-        const SECRET_PHRASE = "MySecretKey2025";
+        // Secret marker (keep this secret and match it in Roblox)
+        const MARKER = "LennyOnTop";
 
         // Generate a simple device identifier
         function generateDeviceId() {
@@ -97,6 +97,21 @@
         const deviceId = generateDeviceId();
         deviceIdDisplay.textContent = `Device ID: ${deviceId}`;
 
+        // Simple hash function to create a 4-character marker from "LennyOnTop"
+        function simpleHash(str) {
+            let hash = 0;
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash * 31) + str.charCodeAt(i)) & 0xFFFFFFFF;
+            }
+            let hashStr = "";
+            for (let i = 0; i < 4; i++) {
+                hash = ((hash * 17) + (hash % 13)) & 0xFFFF;
+                hashStr += chars.charAt(Math.abs(hash) % chars.length);
+            }
+            return hashStr;
+        }
+
         // Generate a random 8-character base key
         function generateBaseKey() {
             const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -107,16 +122,20 @@
             return key;
         }
 
-        // Simple XOR encryption with the secret phrase (match Roblox logic)
-        function encryptKey(baseKey) {
-            let encrypted = "";
-            for (let i = 0; i < baseKey.length; i++) {
-                const keyChar = baseKey.charCodeAt(i);
-                const secretChar = SECRET_PHRASE.charCodeAt(i % SECRET_PHRASE.length);
-                const xorResult = (keyChar + secretChar) % 256;
-                encrypted += String.fromCharCode(xorResult);
-            }
-            return btoa(encrypted);
+        // Generate the full 12-character key with the marker
+        function generateKey() {
+            const baseKey = generateBaseKey(); // 8 characters
+            const markerHash = simpleHash(MARKER); // 4 characters
+            const fullKey = baseKey + markerHash; // 12 characters total
+            const expirationTime = Date.now() + keyExpirationHours * 60 * 60 * 1000;
+
+            localStorage.setItem(`generatedKey_${deviceId}`, fullKey);
+            localStorage.setItem(`keyExpiration_${deviceId}`, expirationTime);
+
+            displayKey(fullKey);
+            getKeyButton.disabled = true;
+            getKeyButton.textContent = "Key Generated";
+            expirationMessage.textContent = `Key expires in ${keyExpirationHours} hours`;
         }
 
         // Check if a key exists locally
@@ -163,21 +182,6 @@
                     generateKey();
                 }
             }, 1000);
-        }
-
-        // Generate a new key
-        function generateKey() {
-            const baseKey = generateBaseKey();
-            const encryptedKey = encryptKey(baseKey);
-            const expirationTime = Date.now() + keyExpirationHours * 60 * 60 * 1000;
-
-            localStorage.setItem(`generatedKey_${deviceId}`, encryptedKey);
-            localStorage.setItem(`keyExpiration_${deviceId}`, expirationTime);
-
-            displayKey(encryptedKey);
-            getKeyButton.disabled = true;
-            getKeyButton.textContent = "Key Generated";
-            expirationMessage.textContent = `Key expires in ${keyExpirationHours} hours`;
         }
 
         // Display the key and create the Copy Key button
