@@ -107,15 +107,16 @@
             return key;
         }
 
-        // Simple XOR encryption with the secret phrase
+        // Simple XOR encryption with the secret phrase (match Roblox logic)
         function encryptKey(baseKey) {
             let encrypted = "";
             for (let i = 0; i < baseKey.length; i++) {
                 const keyChar = baseKey.charCodeAt(i);
                 const secretChar = SECRET_PHRASE.charCodeAt(i % SECRET_PHRASE.length);
-                encrypted += String.fromCharCode(keyChar ^ secretChar);
+                const xorResult = (keyChar + secretChar) % 256;
+                encrypted += String.fromCharCode(xorResult);
             }
-            return btoa(encrypted); // Base64 encode to make it safe for display
+            return btoa(encrypted);
         }
 
         // Check if a key exists locally
